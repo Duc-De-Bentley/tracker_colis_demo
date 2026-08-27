@@ -1,225 +1,573 @@
 <!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta name="robots" content="noindex, nofollow">
+<title>Suivi d'envoi — NKC Express</title>
 
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Parcel.OS Tracking</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- ⚠️ MAQUETTE UNIQUEMENT : Tailwind + Google Fonts en CDN.
+     À inliner / auto-héberger avant toute mise en ligne (functionnal_specs_v7.md §12). -->
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        background: "#f5f0e6",
-                        surface: "#ffffff",
-                        "surface-alt": "#e8e2d2",
-                        text: "#2d2d2d",
-                        "text-muted": "#8b8577",
-                        border: "#dcd6c8",
-                        black: "#2d2d2d",
-                        white: "#ffffff",
-                        primary: "#d97a66" // Soft terracotta
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "1rem",
-                        "2xl": "1.5rem",
-                        "3xl": "2rem",
-                        "full": "9999px"
-                    },
-                    spacing: {
-                        "lg": "24px",
-                        "margin-mobile": "20px",
-                        "base": "4px",
-                        "gutter": "16px",
-                        "xs": "8px",
-                        "sm": "12px",
-                        "margin-desktop": "32px",
-                        "md": "16px",
-                        "xl": "48px"
-                    },
-                    fontFamily: {
-                        "headline-md-mobile": ["Inter", "-apple-system", "sans-serif"],
-                        "display-lg": ["Inter", "-apple-system", "sans-serif"],
-                        "headline-md": ["Inter", "-apple-system", "sans-serif"],
-                        "label-mono": ["JetBrains Mono", "monospace"],
-                        "body-base": ["Inter", "-apple-system", "sans-serif"]
-                    },
-                    boxShadow: {
-                        'apple': '0 4px 24px rgba(45,45,45,0.06), 0 1px 2px rgba(45,45,45,0.03)',
-                        'apple-lg': '0 8px 32px rgba(45,45,45,0.1), 0 2px 4px rgba(45,45,45,0.03)'
-                    }
-                }
-            }
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: "#f5f0e6",
+          surface: "#ffffff",
+          "surface-alt": "#e8e2d2",
+          text: "#2d2d2d",
+          // Amélioration 7 : muted assombri (#8b8577 → #6f6a5e) pour repasser au-dessus du seuil AA
+          "text-muted": "#6f6a5e",
+          border: "#dcd6c8",
+          primary: "#d97a66",   // terracotta — en cours
+          done: "#5f7a55",      // vert sourd — terminé
+          warn: "#a8763a"       // ocre — retour / annulé
+        },
+        fontFamily: {
+          sans: ["Inter", "-apple-system", "sans-serif"],
+          mono: ["JetBrains Mono", "monospace"]
+        },
+        boxShadow: {
+          apple: "0 4px 24px rgba(45,45,45,0.06), 0 1px 2px rgba(45,45,45,0.03)",
+          "apple-lg": "0 8px 32px rgba(45,45,45,0.1), 0 2px 4px rgba(45,45,45,0.03)"
         }
-    </script>
+      }
+    }
+  }
+</script>
+
 <style>
-        body {
-            background-color: #f5f0e6;
-            color: #2d2d2d;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            min-height: max(884px, 100dvh);
-        }
+  body {
+    background-color: #f5f0e6;
+    color: #2d2d2d;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* CORRECTIF : min-height: max(884px, 100dvh) imposait un plancher qui débordait sur petits écrans */
+    min-height: 100dvh;
+  }
 
-        .glass-header {
-            background: rgba(245, 240, 230, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border-bottom: 1px solid rgba(45,45,45,0.05);
-        }
+  .glass-header {
+    background: rgba(245, 240, 230, 0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(45,45,45,0.06);
+  }
 
-        .apple-card {
-            background-color: #ffffff;
-            border-radius: 1.5rem;
-            box-shadow: 0 4px 24px rgba(45,45,45,0.06), 0 1px 2px rgba(45,45,45,0.03);
-            border: 1px solid rgba(45,45,45,0.04);
-        }
+  .apple-card {
+    background-color: #ffffff;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 24px rgba(45,45,45,0.06), 0 1px 2px rgba(45,45,45,0.03);
+    border: 1px solid rgba(45,45,45,0.04);
+  }
 
-        .timeline-line-apple { 
-            position: absolute;
-            left: 23px;
-            top: 24px;
-            bottom: 24px;
-            width: 2px;
-            background-color: #dcd6c8;
-            z-index: 0;
-        }
+  /* Amélioration 3 + correctif d'alignement :
+     un connecteur par nœud (plein avant l'étape atteinte, pointillé après),
+     centré à 24px = centre exact des pastilles de 48px (l'original était à 23px). */
+  .connector {
+    position: absolute;
+    left: 23px;
+    top: 3rem;
+    bottom: -0.25rem;
+    width: 2px;
+    z-index: 0;
+  }
+  .connector--done   { background-color: #d97a66; }
+  .connector--future {
+    background-image: linear-gradient(to bottom, #dcd6c8 55%, transparent 55%);
+    background-size: 2px 8px;
+    background-repeat: repeat-y;
+  }
 
-        /* Micro-interactions */
-        .btn-hover {
-            transition: all 0.2s ease;
-        }
-        .btn-hover:active {
-            transform: scale(0.96);
-            opacity: 0.8;
-        }
+  .btn-hover { transition: all .2s ease; }
+  .btn-hover:active { transform: scale(.97); opacity: .85; }
 
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .pb-safe { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
-        }
-    </style>
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
+  }
+
+  @keyframes spin-once { to { transform: rotate(360deg); } }
+  .spinning { animation: spin-once .8s linear infinite; }
+
+  .skeleton {
+    background: linear-gradient(90deg, #e8e2d2 25%, #f0ebdd 50%, #e8e2d2 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
 </head>
-<body class="w-full flex flex-col font-body-base bg-background h-screen">
-<!-- TopAppBar -->
-<header class="glass-header flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 z-50 sticky top-0 shrink-0">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-text text-2xl">package_2</span>
-<span class="font-headline-md-mobile md:font-headline-md text-lg font-semibold tracking-tight text-text">PARCEL</span>
-</div>
-<div class="flex items-center">
-<button aria-label="Refresh" class="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10 transition-colors btn-hover text-text" onclick="animateRefresh()">
-<span class="material-symbols-outlined text-xl">refresh</span>
-</button>
-</div>
+
+<!-- CORRECTIF PRINCIPAL : h-screen → min-h-screen. Le document défile naturellement,
+     plus rien n'est coupé sous la ligne de flottaison. -->
+<body class="w-full flex flex-col font-sans bg-background min-h-screen">
+
+<!-- ================= EN-TÊTE ================= -->
+<header class="glass-header flex justify-between items-center w-full px-5 md:px-8 h-16 z-50 sticky top-0 shrink-0">
+  <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-text text-2xl">package_2</span>
+    <span class="text-lg font-semibold tracking-tight text-text">NKC Express</span>
+  </div>
+  <button id="btn-refresh" aria-label="Actualiser le suivi" title="Actualiser"
+          class="hidden w-10 h-10 rounded-full items-center justify-center bg-black/5 hover:bg-black/10 transition-colors btn-hover text-text">
+    <span class="material-symbols-outlined text-xl">refresh</span>
+  </button>
 </header>
-<!-- Main Content - 3 Sections -->
-<main class="flex-grow w-full max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-md pb-safe flex flex-col gap-md h-full overflow-y-auto">
-<!-- TOP SECTION: Inputs -->
-<section class="apple-card p-6 flex flex-col gap-4 shrink-0">
-<div class="flex flex-col gap-1">
-<label class="text-xs font-semibold text-text-muted uppercase tracking-wider">UID Colis</label>
-<input class="bg-surface-alt border-none rounded-xl text-lg font-medium focus:ring-2 focus:ring-primary/20 w-full py-3 px-4 text-text placeholder:text-text-muted" placeholder="FR-993-X" type="text" value="FR-993-X"/>
-</div>
-<div class="flex flex-col gap-1">
-<label class="text-xs font-semibold text-text-muted uppercase tracking-wider">Code Secret</label>
-<div class="relative w-full">
-<input class="bg-surface-alt border-none rounded-xl text-lg font-medium focus:ring-2 focus:ring-primary/20 w-full py-3 px-4 text-text placeholder:text-text-muted tracking-widest" placeholder="••••" type="password" value="1234"/>
-<button class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-text-muted hover:text-text transition-colors" type="button">
-<span class="material-symbols-outlined text-xl">visibility_off</span>
-</button>
-</div>
-</div>
-<button class="mt-2 bg-primary text-white rounded-xl py-4 font-semibold text-base btn-hover shadow-apple-lg flex items-center justify-center gap-2">
-<span>Track Parcel</span>
-<span class="material-symbols-outlined text-sm">arrow_forward</span>
-</button>
-</section>
-<!-- MIDDLE SECTION: Squares -->
-<section class="grid grid-cols-2 gap-md shrink-0 h-48 md:h-56">
-<!-- Left Square: Timestamp -->
-<div class="apple-card p-5 flex flex-col justify-between h-full">
-<div class="flex items-center gap-2 text-text-muted">
-<span class="material-symbols-outlined text-xl">schedule</span>
-<span class="text-xs font-semibold uppercase tracking-wider">Last Update</span>
-</div>
-<div class="flex flex-col gap-1">
-<div class="text-3xl md:text-4xl font-bold tracking-tight text-text">14:00</div>
-<div class="text-sm font-medium text-text-muted">13 May 2024</div>
-</div>
-</div>
-<!-- Right Square: Status -->
-<div class="apple-card p-5 flex flex-col justify-between h-full bg-primary text-white">
-<div class="flex items-center gap-2 text-white/80">
-<span class="material-symbols-outlined text-xl">local_shipping</span>
-<span class="text-xs font-semibold uppercase tracking-wider">Status</span>
-</div>
-<div class="flex flex-col gap-1">
-<div class="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight">EXPÉDIÉ</div>
-<div class="text-sm font-medium text-white/80">In transit</div>
-</div>
-</div>
-</section>
-<!-- BOTTOM SECTION: Simplified Flow -->
-<section class="apple-card p-2 md:p-6 flex-grow flex flex-col relative overflow-hidden min-h-[300px]">
-<div class="p-4 md:p-0">
-<h2 class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-6 md:mb-8">Journey</h2>
-<div class="relative flex flex-col gap-8 md:gap-10 pb-4 z-10">
-<!-- Vertical Line -->
-<div class="timeline-line-apple hidden sm:block"></div>
-<!-- Flow Node: DEPOT -->
-<div class="flex items-center gap-4 md:gap-6 relative z-10 opacity-70">
-<div class="w-12 h-12 rounded-full bg-surface-alt flex items-center justify-center shrink-0 border border-border">
-<span class="material-symbols-outlined text-text-muted text-xl">check</span>
-</div>
-<div class="flex-grow">
-<p class="text-sm font-bold text-text uppercase tracking-wide">DÉPÔT</p>
-<p class="text-sm text-text-muted mt-0.5">Centre de tri local</p>
-</div>
-</div>
-<!-- Flow Node: EXPEDIE (ACTIVE) -->
-<div class="flex items-center gap-4 md:gap-6 relative z-10">
-<div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-apple">
-<span class="material-symbols-outlined text-white text-xl">flight_takeoff</span>
-</div>
-<div class="flex-grow">
-<p class="text-lg font-bold text-text tracking-tight">EXPÉDIÉ</p>
-<p class="text-sm font-medium text-text-muted mt-0.5">En transit international</p>
-</div>
-</div>
-<!-- Flow Node: A DESTINATION -->
-<div class="flex items-center gap-4 md:gap-6 relative z-10 opacity-40">
-<div class="w-12 h-12 rounded-full bg-surface-alt flex items-center justify-center shrink-0 border border-border border-dashed">
-<span class="material-symbols-outlined text-text-muted text-xl">location_on</span>
-</div>
-<div class="flex-grow">
-<p class="text-sm font-bold text-text-muted uppercase tracking-wide">À DESTINATION</p>
-</div>
-</div>
-<!-- Flow Node: LIVRE -->
-<div class="flex items-center gap-4 md:gap-6 relative z-10 opacity-40">
-<div class="w-12 h-12 rounded-full bg-surface-alt flex items-center justify-center shrink-0 border border-border border-dashed">
-<span class="material-symbols-outlined text-text-muted text-xl">inventory_2</span>
-</div>
-<div class="flex-grow">
-<p class="text-sm font-bold text-text-muted uppercase tracking-wide">LIVRÉ</p>
-</div>
-</div>
-</div>
-</div>
-</section>
+
+<!-- CORRECTIF : plus de h-full ni d'overflow-y-auto sur le main -->
+<main class="flex-grow w-full max-w-2xl mx-auto px-5 md:px-8 py-6 pb-safe flex flex-col gap-4">
+
+  <!-- ===== ÉCRAN 1 — DÉVERROUILLAGE (repli si le QR n'a pas transmis le code) ===== -->
+  <!-- Amélioration 1 : la saisie n'est plus un bandeau permanent en haut de page,
+       c'est un écran à part entière qui disparaît une fois le suivi ouvert. -->
+  <section id="screen-unlock" class="apple-card p-6 md:p-8 flex flex-col gap-5">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="text-2xl font-bold tracking-tight text-text">Suivre mon envoi</h1>
+      <p class="text-sm text-text-muted leading-relaxed">
+        La référence et le code figurent sur le ticket qui vous a été remis à l'agence.
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <!-- Amélioration 5 : casse normale sur les libellés de champ, + liaison label/input -->
+      <label for="input-ref" class="text-sm font-semibold text-text">Référence de l'envoi</label>
+      <!-- Amélioration 4 : mono sur les identifiants (réduit les confusions 0/O et 1/l) -->
+      <input id="input-ref" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+             placeholder="NKC-260824-007"
+             class="bg-surface-alt border-none rounded-xl font-mono text-lg tracking-wide w-full py-3.5 px-4 text-text placeholder:text-text-muted/60 focus:ring-2 focus:ring-primary/30 uppercase">
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="input-code" class="text-sm font-semibold text-text">Code de suivi</label>
+      <!-- Le code est imprimé en clair sur le ticket : le masquer ferait saisir à l'aveugle -->
+      <input id="input-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+             autocomplete="off" spellcheck="false" placeholder="8 chiffres"
+             class="bg-surface-alt border-none rounded-xl font-mono text-lg tracking-[.3em] w-full py-3.5 px-4 text-text placeholder:text-text-muted/60 placeholder:tracking-normal focus:ring-2 focus:ring-primary/30">
+    </div>
+
+    <div id="unlock-error" class="hidden items-start gap-2.5 rounded-xl bg-warn/10 border border-warn/25 px-4 py-3">
+      <span class="material-symbols-outlined text-warn text-xl shrink-0">error</span>
+      <p id="unlock-error-text" class="text-sm text-text leading-relaxed"></p>
+    </div>
+
+    <button id="btn-track"
+            class="mt-1 bg-primary text-white rounded-xl py-4 font-semibold text-base btn-hover shadow-apple-lg flex items-center justify-center gap-2 disabled:opacity-50">
+      <span id="btn-track-label">Afficher le suivi</span>
+      <span id="btn-track-icon" class="material-symbols-outlined text-lg">arrow_forward</span>
+    </button>
+  </section>
+
+  <!-- ===== ÉCRAN 2 — CHARGEMENT ===== -->
+  <section id="screen-loading" class="hidden flex-col gap-4">
+    <div class="apple-card p-6 flex flex-col gap-4">
+      <div class="skeleton h-4 w-24 rounded"></div>
+      <div class="skeleton h-9 w-2/3 rounded"></div>
+      <div class="skeleton h-4 w-1/2 rounded"></div>
+    </div>
+    <div class="apple-card p-6 flex flex-col gap-6">
+      <div class="skeleton h-4 w-20 rounded"></div>
+      <div class="skeleton h-12 w-full rounded-xl"></div>
+      <div class="skeleton h-12 w-full rounded-xl"></div>
+      <div class="skeleton h-12 w-full rounded-xl"></div>
+    </div>
+  </section>
+
+  <!-- ===== ÉCRAN 3 — RÉSULTAT ===== -->
+  <section id="screen-result" class="hidden flex-col gap-4">
+
+    <!-- Amélioration 2 : le statut occupe toute la largeur et arrive en premier.
+         L'horodatage redevient une ligne discrète au lieu d'une tuile de poids égal. -->
+    <div id="status-band" class="apple-card p-6 md:p-7 flex flex-col gap-5 text-white">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1 min-w-0">
+          <span class="text-xs font-semibold uppercase tracking-wider text-white/75">Statut</span>
+          <!-- min-h au lieu d'une hauteur fixe : un libellé long ne déborde plus -->
+          <h2 id="status-label" class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight break-words"></h2>
+        </div>
+        <span id="status-icon" class="material-symbols-outlined text-4xl text-white/90 shrink-0"></span>
+      </div>
+
+      <p id="status-detail" class="text-base font-medium text-white/85 leading-relaxed"></p>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 border-t border-white/20">
+        <div class="flex items-center gap-2 pt-3">
+          <span id="route-origin" class="text-sm font-semibold text-white"></span>
+          <span class="material-symbols-outlined text-base text-white/70">arrow_right_alt</span>
+          <span id="route-destination" class="text-sm font-semibold text-white"></span>
+        </div>
+        <!-- taille plancher 12px (l'original descendait à 10px) -->
+        <span id="last-update" class="text-xs font-medium text-white/70 pt-3"></span>
+      </div>
+    </div>
+
+    <!-- Référence, en mono -->
+    <div class="apple-card px-6 py-4 flex items-center justify-between gap-4">
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <span class="text-sm font-semibold text-text">Référence</span>
+        <span id="result-ref" class="font-mono text-base font-medium text-text-muted tracking-wide truncate"></span>
+      </div>
+      <button id="btn-change" class="text-sm font-semibold text-primary hover:underline btn-hover shrink-0">
+        Changer
+      </button>
+    </div>
+
+    <!-- Frise -->
+    <div class="apple-card p-6 md:p-7">
+      <h3 class="text-sm font-semibold text-text mb-6">Parcours</h3>
+      <ol id="timeline" class="relative flex flex-col"></ol>
+    </div>
+  </section>
+
+  <!-- ===== ÉCRAN 4 — ERREUR BLOQUANTE (rate-limit / indisponibilité) ===== -->
+  <section id="screen-blocked" class="hidden apple-card p-8 flex-col items-center text-center gap-4">
+    <span class="material-symbols-outlined text-5xl text-warn">lock_clock</span>
+    <h2 class="text-xl font-bold tracking-tight text-text">Trop de tentatives</h2>
+    <p id="blocked-text" class="text-sm text-text-muted leading-relaxed max-w-sm"></p>
+    <button id="btn-blocked-back" class="mt-2 bg-surface-alt text-text rounded-xl py-3 px-6 font-semibold text-sm btn-hover">
+      Revenir
+    </button>
+  </section>
+
+  <p class="text-xs text-text-muted text-center mt-2 leading-relaxed">
+    Une question sur votre envoi&nbsp;? Contactez l'agence de dépôt.
+  </p>
 </main>
+
+<!-- Annonce des changements d'état aux lecteurs d'écran -->
+<div id="live-region" aria-live="polite" class="sr-only"></div>
+
 <script>
-        function animateRefresh() {
-            const refreshBtn = document.querySelector('header button span.material-symbols-outlined');
-            if (refreshBtn) {
-                refreshBtn.classList.add('animate-spin');
-                setTimeout(() => refreshBtn.classList.remove('animate-spin'), 1000);
-            }
-        }
-    </script>
-</body></html>
+/* =========================================================================
+   NKC Express — Page de suivi · v1 (maquette UI/UX)
+   Les données sont simulées. Aucun appel réseau : le backend n'existe pas
+   encore (api_contract_v6.md §4 · GET /tracking/:base_uid?c=<code>).
+   ========================================================================= */
+
+// === DEBUT BLOC : Référentiel des statuts ===
+// Libellés client. Le détail est construit à partir des villes d'origine et de
+// destination — jamais de ville écrite en dur (functionnal_specs_v7.md §6).
+const STATUSES = {
+  100: { label: "Déposé",        icon: "publish",        tone: "primary", detail: (o, d) => `Enregistré à ${o}, en attente de départ vers ${d}.` },
+  200: { label: "Expédié",       icon: "flight_takeoff", tone: "primary", detail: (o, d) => `En transit vers ${d}.` },
+  300: { label: "Disponible",    icon: "flight_land",    tone: "primary", detail: (o, d) => `Arrivé à ${d}, prêt à être retiré.` },
+  350: { label: "En livraison",  icon: "local_shipping", tone: "primary", detail: (o, d) => `En tournée de livraison à ${d}.` },
+  400: { label: "Livré",         icon: "inventory_2",    tone: "done",    detail: (o, d) => `Remis au destinataire à ${d}.` },
+  900: { label: "Retour",        icon: "undo",           tone: "warn",    detail: (o, d) => `Renvoyé à l'expéditeur, à ${o}.` },
+  999: { label: "Annulé",        icon: "cancel",         tone: "warn",    detail: () => `Cet envoi a été annulé.` }
+};
+
+// Amélioration 6 : trois tons au lieu d'un seul accent, sinon « livré » et
+// « en transit » se ressemblent exactement.
+const TONES = {
+  primary: { bg: "#d97a66", dot: "#d97a66" },
+  done:    { bg: "#5f7a55", dot: "#5f7a55" },
+  warn:    { bg: "#a8763a", dot: "#a8763a" }
+};
+
+const NORMAL_FLOW = [100, 200, 300, 400];
+const CITIES = { paris: "Paris", nouakchott: "Nouakchott" };
+// === FIN BLOC : Référentiel des statuts ===
+
+
+// === DEBUT BLOC : Jeu de données simulé ===
+// Quatre cas de test, un par comportement à valider visuellement.
+const MOCK = {
+  "NKC-260824-007": { // en transit — cas nominal
+    code: "41528096", status: 200, origin_city: "paris", destination_city: "nouakchott",
+    history: [
+      { status: 100, date: "2026-08-24T14:30:00" },
+      { status: 200, date: "2026-08-25T09:15:00" }
+    ]
+  },
+  "NKC-260827-002": { // déposé, aucun colis créé — la page ne doit jamais être vide
+    code: "10293847", status: 100, origin_city: "paris", destination_city: "nouakchott",
+    history: [ { status: 100, date: "2026-08-27T10:05:00" } ]
+  },
+  "NKC-260812-014": { // livré — vérifie le ton « done »
+    code: "77451230", status: 400, origin_city: "nouakchott", destination_city: "paris",
+    history: [
+      { status: 100, date: "2026-08-12T11:00:00" },
+      { status: 200, date: "2026-08-13T08:40:00" },
+      { status: 300, date: "2026-08-18T15:20:00" },
+      { status: 400, date: "2026-08-19T17:05:00" }
+    ]
+  },
+  "NKC-260805-003": { // retour expéditeur — vérifie le ton « warn » hors frise
+    code: "55512348", status: 900, origin_city: "paris", destination_city: "nouakchott",
+    history: [
+      { status: 100, date: "2026-08-05T09:30:00" },
+      { status: 200, date: "2026-08-06T07:50:00" },
+      { status: 900, date: "2026-08-20T13:10:00" }
+    ]
+  }
+};
+
+const LATENCY_MS = 700;   // simule la latence réseau, pour voir le squelette
+const MAX_ATTEMPTS = 5;   // simule le rate-limiting du Worker Cloudflare
+let failedAttempts = 0;
+let currentRef = null;
+let currentCode = null;
+
+function fetchTracking(ref, code) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (failedAttempts >= MAX_ATTEMPTS) return reject({ code: "RATE_LIMITED" });
+      const row = MOCK[ref];
+      // Message d'erreur UNIFORME : ne révèle pas si c'est la référence
+      // ou le code qui est faux (SECURITY_v3.md §S2).
+      if (!row || row.code !== code) {
+        failedAttempts++;
+        return reject({ code: "NOT_FOUND" });
+      }
+      failedAttempts = 0;
+      resolve({
+        status: row.status,
+        status_history: row.history,
+        origin_city: row.origin_city,
+        destination_city: row.destination_city
+      });
+    }, LATENCY_MS);
+  });
+}
+// === FIN BLOC : Jeu de données simulé ===
+
+
+// === DEBUT BLOC : Utilitaires ===
+const $ = (id) => document.getElementById(id);
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return `${date} à ${time}`;
+}
+
+function formatShort(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })
+       + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function showScreen(name) {
+  ["screen-unlock", "screen-loading", "screen-result", "screen-blocked"].forEach((id) => {
+    const el = $(id);
+    const on = id === "screen-" + name;
+    el.classList.toggle("hidden", !on);
+    el.classList.toggle("flex", on);
+  });
+  $("btn-refresh").classList.toggle("hidden", name !== "result");
+  $("btn-refresh").classList.toggle("flex", name === "result");
+}
+
+function announce(msg) { $("live-region").textContent = msg; }
+// === FIN BLOC : Utilitaires ===
+
+
+// === DEBUT BLOC : Rendu de la frise ===
+function renderTimeline(data) {
+  const origin = CITIES[data.origin_city] || data.origin_city;
+  const destination = CITIES[data.destination_city] || data.destination_city;
+  const reached = new Map(data.status_history.map((h) => [h.status, h.date]));
+
+  // Statuts hors parcours normal (retour, annulation) : ajoutés en fin de frise.
+  const exceptional = data.status_history
+    .map((h) => h.status)
+    .filter((s) => !NORMAL_FLOW.includes(s));
+
+  let steps = [...NORMAL_FLOW];
+  if (reached.has(350)) steps.splice(steps.indexOf(400), 0, 350);
+  if (exceptional.length) {
+    // Un envoi en retour ou annulé n'ira jamais jusqu'à « Livré ».
+    steps = steps.filter((s) => reached.has(s)).concat(exceptional);
+  }
+
+  const lastReachedIndex = steps.reduce((acc, s, i) => (reached.has(s) ? i : acc), -1);
+
+  $("timeline").innerHTML = steps.map((code, i) => {
+    const st = STATUSES[code];
+    const isReached = reached.has(code);
+    const isCurrent = i === lastReachedIndex;
+    const isLast = i === steps.length - 1;
+    const tone = TONES[st.tone];
+
+    // Le connecteur est plein jusqu'au nœud atteint, pointillé au-delà :
+    // le trait raconte la progression à lui seul.
+    const connector = isLast ? ""
+      : `<span class="connector ${i < lastReachedIndex ? "connector--done" : "connector--future"}"></span>`;
+
+    const dotStyle = isCurrent
+      ? `background-color:${tone.dot};`
+      : isReached
+        ? `background-color:${tone.dot}22;border:2px solid ${tone.dot};`
+        : "background-color:#e8e2d2;border:2px dashed #dcd6c8;";
+
+    const iconColor = isCurrent ? "#ffffff" : isReached ? tone.dot : "#6f6a5e";
+
+    // Amélioration 3 : opacité remontée à 65% (l'original tombait à 40%,
+    // illisible cumulé au gris et au pointillé).
+    const dim = isReached ? "" : "opacity-[.65]";
+
+    // Aucune date sur les étapes à venir : l'API ne renvoie que le passé,
+    // annoncer une date de livraison serait une promesse de délai.
+    const dateLine = isReached
+      ? `<p class="text-xs font-medium text-text-muted mt-1.5 font-mono">${formatShort(reached.get(code))}</p>`
+      : `<p class="text-xs font-medium text-text-muted mt-1.5">À venir</p>`;
+
+    return `
+      <li class="relative pl-16 ${isLast ? "" : "pb-8"} ${dim}">
+        ${connector}
+        <span class="absolute left-0 top-0 w-12 h-12 rounded-full flex items-center justify-center z-10" style="${dotStyle}">
+          <span class="material-symbols-outlined text-xl" style="color:${iconColor}">${st.icon}</span>
+        </span>
+        <div class="pt-1.5">
+          <p class="${isCurrent ? "text-lg font-bold" : "text-base font-semibold"} tracking-tight text-text">${st.label}</p>
+          <p class="text-sm text-text-muted mt-0.5 leading-relaxed">${st.detail(origin, destination)}</p>
+          ${dateLine}
+        </div>
+      </li>`;
+  }).join("");
+}
+// === FIN BLOC : Rendu de la frise ===
+
+
+// === DEBUT BLOC : Rendu du résultat ===
+function renderResult(data) {
+  const st = STATUSES[data.status];
+  const tone = TONES[st.tone];
+  const origin = CITIES[data.origin_city] || data.origin_city;
+  const destination = CITIES[data.destination_city] || data.destination_city;
+  const last = data.status_history[data.status_history.length - 1];
+
+  $("status-band").style.backgroundColor = tone.bg;
+  $("status-band").style.borderColor = "transparent";
+  $("status-label").textContent = st.label;
+  $("status-icon").textContent = st.icon;
+  $("status-detail").textContent = st.detail(origin, destination);
+  $("route-origin").textContent = origin;
+  $("route-destination").textContent = destination;
+  $("last-update").textContent = "Mis à jour le " + formatDate(last.date);
+  $("result-ref").textContent = currentRef;
+
+  renderTimeline(data);
+  showScreen("result");
+  announce(`Statut de l'envoi : ${st.label}. ${st.detail(origin, destination)}`);
+}
+// === FIN BLOC : Rendu du résultat ===
+
+
+// === DEBUT BLOC : Contrôleur ===
+function showUnlockError(msg) {
+  $("unlock-error-text").textContent = msg;
+  $("unlock-error").classList.remove("hidden");
+  $("unlock-error").classList.add("flex");
+  announce(msg);
+}
+
+function clearUnlockError() {
+  $("unlock-error").classList.add("hidden");
+  $("unlock-error").classList.remove("flex");
+}
+
+function setTracking(busy) {
+  $("btn-track").disabled = busy;
+  $("btn-track-label").textContent = busy ? "Vérification…" : "Afficher le suivi";
+  $("btn-track-icon").textContent = busy ? "progress_activity" : "arrow_forward";
+  $("btn-track-icon").classList.toggle("spinning", busy);
+}
+
+function lookup(ref, code, { silent = false } = {}) {
+  clearUnlockError();
+  if (!silent) { setTracking(true); showScreen("loading"); }
+
+  fetchTracking(ref, code)
+    .then((data) => {
+      currentRef = ref;
+      currentCode = code;
+      renderResult(data);
+    })
+    .catch((err) => {
+      if (err.code === "RATE_LIMITED") {
+        $("blocked-text").textContent =
+          "Par sécurité, l'accès au suivi est temporairement suspendu. Réessayez dans quelques minutes, ou contactez l'agence de dépôt.";
+        showScreen("blocked");
+        announce("Accès temporairement suspendu.");
+        return;
+      }
+      showScreen("unlock");
+      // Message strictement identique quelle que soit la cause.
+      showUnlockError("Référence ou code de suivi incorrect. Vérifiez les deux valeurs sur votre ticket.");
+    })
+    .finally(() => setTracking(false));
+}
+
+$("btn-track").addEventListener("click", () => {
+  const ref = $("input-ref").value.trim().toUpperCase();
+  const code = $("input-code").value.trim();
+  if (!ref || !code) {
+    showUnlockError("Renseignez la référence et le code de suivi.");
+    return;
+  }
+  lookup(ref, code);
+});
+
+[$("input-ref"), $("input-code")].forEach((input) => {
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-track").click(); });
+  input.addEventListener("input", clearUnlockError);
+});
+
+// Le code de suivi n'accepte que des chiffres
+$("input-code").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 8);
+});
+
+$("btn-change").addEventListener("click", () => {
+  $("input-code").value = "";
+  clearUnlockError();
+  showScreen("unlock");
+  $("input-ref").focus();
+});
+
+$("btn-blocked-back").addEventListener("click", () => {
+  failedAttempts = 0;
+  showScreen("unlock");
+});
+
+// Le bouton actualiser relance réellement la requête — pas seulement l'animation.
+$("btn-refresh").addEventListener("click", () => {
+  if (!currentRef) return;
+  const icon = $("btn-refresh").querySelector("span");
+  icon.classList.add("spinning");
+  fetchTracking(currentRef, currentCode)
+    .then(renderResult)
+    .catch(() => announce("Actualisation impossible."))
+    .finally(() => icon.classList.remove("spinning"));
+});
+
+// === Ouverture par QR : …/track/{base_uid}?c={code} ===
+// Déverrouillage automatique, puis nettoyage de l'URL (functionnal_specs_v7.md §12).
+(function initFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("c");
+  const path = window.location.pathname.split("/").filter(Boolean);
+  const ref = params.get("ref") || (path.length ? decodeURIComponent(path[path.length - 1]).toUpperCase() : null);
+
+  if (ref && code && /^NKC-\d{6}-\d{3}$/.test(ref)) {
+    $("input-ref").value = ref;
+    $("input-code").value = code;
+    showScreen("loading");
+    lookup(ref, code, { silent: true });
+    history.replaceState(null, "", window.location.pathname);
+    return;
+  }
+  showScreen("unlock");
+})();
+// === FIN BLOC : Contrôleur ===
+</script>
+</body>
+</html>
