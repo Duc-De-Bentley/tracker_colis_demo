@@ -13,15 +13,15 @@
             theme: {
                 extend: {
                     colors: {
-                        background: "#0A1323",
-                        surface: "#101C31",
-                        "surface-alt": "#162540",
-                        text: "#ffffff",
-                        "text-muted": "#8ba3c7",
-                        border: "#203457",
-                        primary: "#00E5FF",
-                        "primary-dark": "#00B8CC",
-                        white: "#ffffff"
+                        background: "#f5f0e6",
+                        surface: "#ffffff",
+                        "surface-alt": "#e8e2d2",
+                        text: "#2d2d2d",
+                        "text-muted": "#8b8577",
+                        border: "#dcd6c8",
+                        black: "#2d2d2d",
+                        white: "#ffffff",
+                        primary: "#d97a66" // Soft terracotta
                     },
                     borderRadius: {
                         "DEFAULT": "0.25rem",
@@ -50,8 +50,8 @@
                         "body-base": ["Inter", "-apple-system", "sans-serif"]
                     },
                     boxShadow: {
-                        'apple': '0 4px 24px rgba(0,229,255,0.15), 0 1px 2px rgba(0,229,255,0.05)',
-                        'apple-lg': '0 8px 32px rgba(0,229,255,0.2), 0 2px 4px rgba(0,229,255,0.1)'
+                        'apple': '0 4px 24px rgba(45,45,45,0.06), 0 1px 2px rgba(45,45,45,0.03)',
+                        'apple-lg': '0 8px 32px rgba(45,45,45,0.1), 0 2px 4px rgba(45,45,45,0.03)'
                     }
                 }
             }
@@ -59,25 +59,25 @@
     </script>
 <style>
         body {
-            background-color: #0A1323;
-            color: #ffffff;
+            background-color: #f5f0e6;
+            color: #2d2d2d;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             min-height: max(884px, 100dvh);
         }
 
         .glass-header {
-            background: rgba(16, 28, 49, 0.8);
+            background: rgba(245, 240, 230, 0.8);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(45,45,45,0.05);
         }
 
         .apple-card {
-            background-color: #101C31;
+            background-color: #ffffff;
             border-radius: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 24px rgba(45,45,45,0.06), 0 1px 2px rgba(45,45,45,0.03);
+            border: 1px solid rgba(45,45,45,0.04);
         }
 
         .timeline-line-apple { 
@@ -86,7 +86,7 @@
             top: 24px;
             bottom: 24px;
             width: 2px;
-            background-color: #203457;
+            background-color: #dcd6c8;
             z-index: 0;
         }
 
@@ -108,11 +108,11 @@
 <!-- TopAppBar -->
 <header class="glass-header flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 z-50 sticky top-0 shrink-0">
 <div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-white text-2xl">package_2</span>
-<span class="font-headline-md-mobile md:font-headline-md text-lg font-semibold tracking-tight text-white">PARCEL</span>
+<span class="material-symbols-outlined text-text text-2xl">package_2</span>
+<span class="font-headline-md-mobile md:font-headline-md text-lg font-semibold tracking-tight text-text">PARCEL</span>
 </div>
 <div class="flex items-center">
-<button aria-label="Refresh" class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors btn-hover text-white" onclick="animateRefresh()">
+<button aria-label="Refresh" class="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10 transition-colors btn-hover text-text" onclick="animateRefresh()">
 <span class="material-symbols-outlined text-xl">refresh</span>
 </button>
 </div>
@@ -123,18 +123,18 @@
 <section class="apple-card p-6 flex flex-col gap-4 shrink-0">
 <div class="flex flex-col gap-1">
 <label class="text-xs font-semibold text-text-muted uppercase tracking-wider">UID Colis</label>
-<input class="bg-surface-alt border border-border rounded-xl text-lg font-medium focus:ring-2 focus:ring-primary w-full py-3 px-4 text-white placeholder:text-text-muted" placeholder="FR-993-X" type="text" value="FR-993-X"/>
+<input class="bg-surface-alt border-none rounded-xl text-lg font-medium focus:ring-2 focus:ring-primary/20 w-full py-3 px-4 text-text placeholder:text-text-muted" placeholder="FR-993-X" type="text" value="FR-993-X"/>
 </div>
 <div class="flex flex-col gap-1">
 <label class="text-xs font-semibold text-text-muted uppercase tracking-wider">Code Secret</label>
 <div class="relative w-full">
-<input class="bg-surface-alt border border-border rounded-xl text-lg font-medium focus:ring-2 focus:ring-primary w-full py-3 px-4 text-white placeholder:text-text-muted tracking-widest" placeholder="••••" type="password" value="1234"/>
-<button class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-text-muted hover:text-white transition-colors" type="button">
+<input class="bg-surface-alt border-none rounded-xl text-lg font-medium focus:ring-2 focus:ring-primary/20 w-full py-3 px-4 text-text placeholder:text-text-muted tracking-widest" placeholder="••••" type="password" value="1234"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-text-muted hover:text-text transition-colors" type="button">
 <span class="material-symbols-outlined text-xl">visibility_off</span>
 </button>
 </div>
 </div>
-<button class="mt-2 bg-primary hover:bg-primary-dark text-[#0A1323] rounded-xl py-4 font-bold text-base btn-hover shadow-apple-lg flex items-center justify-center gap-2 transition-colors">
+<button class="mt-2 bg-primary text-white rounded-xl py-4 font-semibold text-base btn-hover shadow-apple-lg flex items-center justify-center gap-2">
 <span>Track Parcel</span>
 <span class="material-symbols-outlined text-sm">arrow_forward</span>
 </button>
@@ -148,19 +148,19 @@
 <span class="text-xs font-semibold uppercase tracking-wider">Last Update</span>
 </div>
 <div class="flex flex-col gap-1">
-<div class="text-3xl md:text-4xl font-bold tracking-tight text-white">14:00</div>
+<div class="text-3xl md:text-4xl font-bold tracking-tight text-text">14:00</div>
 <div class="text-sm font-medium text-text-muted">13 May 2024</div>
 </div>
 </div>
 <!-- Right Square: Status -->
-<div class="apple-card p-5 flex flex-col justify-between h-full bg-primary text-[#0A1323] border-none shadow-apple-lg">
-<div class="flex items-center gap-2 text-[#0A1323]/70">
+<div class="apple-card p-5 flex flex-col justify-between h-full bg-primary text-white">
+<div class="flex items-center gap-2 text-white/80">
 <span class="material-symbols-outlined text-xl">local_shipping</span>
-<span class="text-xs font-bold uppercase tracking-wider">Status</span>
+<span class="text-xs font-semibold uppercase tracking-wider">Status</span>
 </div>
 <div class="flex flex-col gap-1">
 <div class="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight">EXPÉDIÉ</div>
-<div class="text-sm font-semibold text-[#0A1323]/80">In transit</div>
+<div class="text-sm font-medium text-white/80">In transit</div>
 </div>
 </div>
 </section>
@@ -177,18 +177,18 @@
 <span class="material-symbols-outlined text-text-muted text-xl">check</span>
 </div>
 <div class="flex-grow">
-<p class="text-sm font-bold text-white uppercase tracking-wide">DÉPÔT</p>
+<p class="text-sm font-bold text-text uppercase tracking-wide">DÉPÔT</p>
 <p class="text-sm text-text-muted mt-0.5">Centre de tri local</p>
 </div>
 </div>
 <!-- Flow Node: EXPEDIE (ACTIVE) -->
 <div class="flex items-center gap-4 md:gap-6 relative z-10">
 <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-apple">
-<span class="material-symbols-outlined text-[#0A1323] text-xl">flight_takeoff</span>
+<span class="material-symbols-outlined text-white text-xl">flight_takeoff</span>
 </div>
 <div class="flex-grow">
-<p class="text-lg font-bold text-primary tracking-tight">EXPÉDIÉ</p>
-<p class="text-sm font-medium text-[#c8d9f0] mt-0.5">En transit international</p>
+<p class="text-lg font-bold text-text tracking-tight">EXPÉDIÉ</p>
+<p class="text-sm font-medium text-text-muted mt-0.5">En transit international</p>
 </div>
 </div>
 <!-- Flow Node: A DESTINATION -->
