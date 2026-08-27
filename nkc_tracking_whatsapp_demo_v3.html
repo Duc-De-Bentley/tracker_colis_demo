@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta name="robots" content="noindex, nofollow">
+<title>Démo transitions — thème WhatsApp · NKC Express</title>
+<meta name="color-scheme" content="light only">
+
+<!-- ⚠️ OUTIL DE DÉMONSTRATION, PAS UN LIVRABLE. CDN conservés pour l'usage local. -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================================
+   Thème WhatsApp — figé, identique à nkc_tracking_v2.html.
+   Un seul vert pour tout le parcours normal (100 → 400).
+   ========================================================================= */
+:root {
+  color-scheme: light;
+  --bg: #f0f2f5; --surface: #ffffff; --surface-alt: #e9edef;
+  --border: #d9dee1; --text: #111b21; --text-muted: #5e6b73;
+  --primary: #128C7E; --warn: #B85C00;
+  --card-border: rgba(17,27,33,.04);
+  --shadow: 0 4px 24px rgba(17,27,33,.06), 0 1px 2px rgba(17,27,33,.03);
+  --shadow-lg: 0 8px 28px rgba(18,140,126,.22), 0 2px 4px rgba(17,27,33,.04);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Inter, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono { font-family: "JetBrains Mono", monospace; }
+.material-symbols-outlined { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; }
+
+/* ===== Barre de démo (n'existe pas dans le livrable) ===== */
+.bench {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(17,27,33,.95);
+  backdrop-filter: blur(20px);
+  padding: 14px 20px; display: flex; flex-direction: column; gap: 11px;
+}
+.bench-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bench-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); min-width: 68px; }
+.chip {
+  border: 1px solid rgba(255,255,255,.16); background: transparent; color: rgba(255,255,255,.78);
+  border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .16s ease; display: flex; align-items: center; gap: 7px;
+}
+.chip:hover { background: rgba(255,255,255,.08); color: #fff; }
+.chip[aria-pressed="true"] { background: #128C7E; color: #fff; border-color: #128C7E; }
+.chip.warn-chip[aria-pressed="true"] { background: #B85C00; border-color: #B85C00; }
+.chip.arrival-chip[aria-pressed="true"] { background: #00C566; border-color: #00C566; color: #052E19; }
+.chip-desc { font-size: 11px; color: rgba(255,255,255,.4); margin-left: 2px; }
+.playbar { display: flex; align-items: center; gap: 10px; }
+.play-btn {
+  width: 34px; height: 34px; border-radius: 999px; border: none; cursor: pointer;
+  background: #128C7E; color: #fff; display: flex; align-items: center; justify-content: center;
+  transition: transform .15s ease;
+}
+.play-btn:active { transform: scale(.92); }
+.progress-track { flex: 1; height: 3px; background: rgba(255,255,255,.15); border-radius: 999px; overflow: hidden; min-width: 80px; }
+.progress-fill { height: 100%; background: #128C7E; width: 0%; transition: width .3s linear; }
+
+/* ===== Page ===== */
+.wrap { max-width: 620px; margin: 0 auto; padding: 24px 20px 56px; display: flex; flex-direction: column; gap: 16px; }
+
+.appbar { display: flex; align-items: center; justify-content: space-between; height: 56px; margin-bottom: -4px; }
+.brand { display: flex; align-items: center; gap: 11px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 999px; border: none; cursor: pointer;
+  background: rgba(17,27,33,.05); color: var(--text);
+  display: flex; align-items: center; justify-content: center; transition: transform .3s ease;
+}
+.icon-btn.spinning span { animation: spin .7s linear; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow); border: 1px solid var(--card-border); }
+
+.band { padding: 26px; display: flex; flex-direction: column; gap: 20px; border-radius: 24px; color: #fff; transition: background-color .3s ease; }
+.band-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.band-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; opacity: .82; }
+.band-label { font-size: 34px; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; margin-top: 4px; }
+.band-detail { font-size: 15px; font-weight: 500; opacity: .92; line-height: 1.5; }
+.band-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 28%, transparent); }
+.route { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.stamp { font-size: 12px; font-weight: 500; opacity: .8; font-family: "JetBrains Mono", monospace; }
+
+.ref-card { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ref-label { font-size: 14px; font-weight: 600; }
+.ref-value { font-size: 15px; font-weight: 500; color: var(--text-muted); letter-spacing: .02em; margin-top: 2px; }
+.link-btn { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--primary); }
+
+.tl-card { padding: 26px; }
+.tl-title { font-size: 14px; font-weight: 600; margin-bottom: 24px; }
+.tl { list-style: none; position: relative; }
+.tl li { position: relative; padding-left: 64px; padding-bottom: 32px; transition: opacity .25s ease; }
+.tl li:last-child { padding-bottom: 0; }
+.connector { position: absolute; left: 23px; top: 48px; bottom: -4px; width: 2px; z-index: 0; transition: background-color .25s ease; }
+.connector.done { background: var(--primary); }
+.connector.future { background-image: linear-gradient(to bottom, var(--border) 55%, transparent 55%); background-size: 2px 8px; background-repeat: repeat-y; }
+.dot { position: absolute; left: 0; top: 0; width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; z-index: 1; transition: all .25s ease; }
+.tl-body { padding-top: 6px; }
+.tl-name { font-size: 16px; font-weight: 600; letter-spacing: -.01em; transition: font-size .2s ease; }
+.tl-name.current { font-size: 18px; font-weight: 700; }
+.tl-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
+.tl-date { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-top: 6px; font-family: "JetBrains Mono", monospace; }
+.future-node { opacity: .65; }
+
+.note { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== BARRE DE DÉMO ===================== -->
+<div class="bench">
+  <div class="bench-row">
+    <span class="bench-label">Statut</span>
+    <div id="status-chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+  <div class="bench-row">
+    <span class="bench-label">Scénario</span>
+    <div id="scenario-chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+  <div class="bench-row playbar">
+    <span class="bench-label" style="min-width:auto">Lecture</span>
+    <button class="play-btn" id="play-btn" aria-label="Lire le parcours">
+      <span class="material-symbols-outlined" id="play-icon" style="font-size:18px">play_arrow</span>
+    </button>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="appbar">
+    <div class="brand">
+      <span class="material-symbols-outlined" style="color:#128C7E;font-size:24px">package_2</span>
+      <span>NKC Express</span>
+    </div>
+    <button class="icon-btn" id="btn-refresh"><span class="material-symbols-outlined" style="font-size:20px">refresh</span></button>
+  </div>
+
+  <div class="card band" id="band">
+    <div class="band-top">
+      <div style="min-width:0">
+        <div class="band-eyebrow">Statut</div>
+        <h2 class="band-label" id="band-label"></h2>
+      </div>
+      <span class="material-symbols-outlined" id="band-icon" style="font-size:38px;opacity:.92"></span>
+    </div>
+    <p class="band-detail" id="band-detail"></p>
+    <div class="band-foot">
+      <div class="route">
+        <span id="route-o"></span>
+        <span class="material-symbols-outlined" style="font-size:18px;opacity:.75">arrow_right_alt</span>
+        <span id="route-d"></span>
+      </div>
+      <span class="stamp" id="stamp"></span>
+    </div>
+  </div>
+
+  <div class="card ref-card">
+    <div style="min-width:0">
+      <div class="ref-label">Référence</div>
+      <div class="ref-value mono" id="ref-value">NKC-260824-007</div>
+    </div>
+    <button class="link-btn">Changer</button>
+  </div>
+
+  <div class="card tl-card">
+    <div class="tl-title">Parcours</div>
+    <ol class="tl" id="timeline"></ol>
+  </div>
+
+  <p class="note">Démo des transitions — thème WhatsApp figé (un seul vert pour 100 → 400, ocre pour 900/999). Structure identique à <span class="mono">nkc_tracking_v2.html</span>.</p>
+</div>
+
+<script>
+/* ===== Statuts : identiques à v2, un seul vert pour le parcours normal ===== */
+const STATUSES = {
+  100: { label: "Déposé",       icon: "publish",        tone: "primary", detail: (o,d) => `Enregistré à ${o}, en attente de départ vers ${d}.` },
+  200: { label: "Expédié",      icon: "flight_takeoff", tone: "primary", detail: (o,d) => `En transit vers ${d}.` },
+  300: { label: "Disponible",   icon: "flight_land",    tone: "primary", detail: (o,d) => `Arrivé à ${d}, prêt à être retiré.` },
+  350: { label: "En livraison", icon: "local_shipping", tone: "primary", detail: (o,d) => `En tournée de livraison à ${d}.` },
+  // ⚠️ Écart v2 → v3 : "Livré" quitte le ton "primary" (teal) pour un ton "arrival"
+  // dédié — vert vif à texte sombre. C'est la seule étape qui rompt la charte
+  // teal du reste du parcours, délibérément, pour se reconnaître d'un coup d'œil.
+  400: { label: "Livré",        icon: "inventory_2",    tone: "arrival", detail: (o,d) => `Remis au destinataire à ${d}.` },
+  900: { label: "Retour",       icon: "undo",           tone: "warn",    detail: (o)   => `Renvoyé à l'expéditeur, à ${o}.` },
+  999: { label: "Annulé",       icon: "cancel",         tone: "warn",    detail: ()    => `Cet envoi a été annulé.` }
+};
+// Chaque ton porte son bg + la couleur de texte à utiliser dessus (fg).
+// "arrival" est le seul en texte sombre : le vert vif #00C566 ne supporte pas
+// le blanc (contraste ~1,8:1). Contraste vérifié : #00C566 / #052E19 → 6,5:1 (AA).
+const TONES = {
+  primary: { bg: "#128C7E", fg: "#ffffff" },
+  arrival: { bg: "#00C566", fg: "#052E19" },
+  warn:    { bg: "#B85C00", fg: "#ffffff" }
+};
+
+/* Trois scénarios, pour couvrir les branches du modèle
+   (functionnal_specs_v7.md §2 : 100→200→300→400, branche 300→350→400, terminaux 900/999) */
+const SCENARIOS = {
+  standard: { name: "Standard",       steps: [100, 200, 300, 400] },
+  domicile: { name: "Avec livraison", steps: [100, 200, 300, 350, 400] },
+  retour:   { name: "Retour",         steps: [100, 200, 900] }
+};
+const DATES = {
+  100: "24/08/26 · 14:30", 200: "25/08/26 · 09:15", 300: "27/08/26 · 16:45",
+  350: "28/08/26 · 08:20", 400: "28/08/26 · 11:00", 900: "29/08/26 · 13:10", 999: "26/08/26 · 10:00"
+};
+const ORIGIN = "Paris", DEST = "Nouakchott";
+const REFS = { standard: "NKC-260824-007", domicile: "NKC-260824-011", retour: "NKC-260805-003" };
+
+let scenario = "standard";
+let stepIndex = 1; // démarre sur "Expédié", comme v2
+let playing = false;
+let playTimer = null;
+
+function currentSteps() { return SCENARIOS[scenario].steps; }
+function currentStatus() { return currentSteps()[stepIndex]; }
+
+function render() {
+  const steps = currentSteps();
+  const code = currentStatus();
+  const st = STATUSES[code];
+  const tone = TONES[st.tone];
+
+  const band = document.getElementById("band");
+  band.style.backgroundColor = tone.bg;
+  band.style.color = tone.fg;
+  document.getElementById("band-label").textContent = st.label;
+  document.getElementById("band-icon").textContent = st.icon;
+  document.getElementById("band-detail").textContent = st.detail(ORIGIN, DEST);
+  document.getElementById("route-o").textContent = ORIGIN;
+  document.getElementById("route-d").textContent = DEST;
+  document.getElementById("stamp").textContent = "Mis à jour le " + DATES[code];
+  document.getElementById("ref-value").textContent = REFS[scenario];
+
+  document.getElementById("timeline").innerHTML = steps.map((c, i) => {
+    const s = STATUSES[c];
+    const t = TONES[s.tone];
+    const reached = i <= stepIndex, current = i === stepIndex, last = i === steps.length - 1;
+    // Le connecteur porte la couleur de l'étape qu'il MÈNE VERS, pas celle d'où il part —
+    // sinon le segment menant à "Livré" resterait teal jusqu'au bout.
+    const connColor = i + 1 <= stepIndex ? TONES[STATUSES[steps[i + 1]]?.tone]?.bg : null;
+    const conn = last ? "" : `<span class="connector ${i < stepIndex ? "done" : "future"}"${connColor ? ` style="background-color:${connColor}"` : ""}></span>`;
+    const dotCss = current
+      ? `background:${t.bg}`
+      : reached
+        ? `background:${t.bg}1f;border:2px solid ${t.bg}`
+        : `background:var(--surface-alt);border:2px dashed var(--border)`;
+    const iconCol = current ? t.fg : reached ? t.bg : "var(--text-muted)";
+    return `<li class="${reached ? "" : "future-node"}">
+      ${conn}
+      <span class="dot" style="${dotCss}">
+        <span class="material-symbols-outlined" style="font-size:21px;color:${iconCol}">${s.icon}</span>
+      </span>
+      <div class="tl-body">
+        <div class="tl-name ${current ? "current" : ""}">${s.label}</div>
+        <div class="tl-desc">${s.detail(ORIGIN, DEST)}</div>
+        <div class="tl-date">${reached ? DATES[c] : "À venir"}</div>
+      </div>
+    </li>`;
+  }).join("");
+
+  // Synchronise les puces de statut avec le pas courant
+  document.querySelectorAll("#status-chips .chip").forEach(chip => {
+    chip.setAttribute("aria-pressed", String(Number(chip.dataset.code) === code));
+  });
+
+  document.getElementById("progress-fill").style.width = (stepIndex / (steps.length - 1) * 100) + "%";
+}
+
+function buildStatusChips() {
+  const steps = currentSteps();
+  document.getElementById("status-chips").innerHTML = steps.map((c, i) => {
+    const s = STATUSES[c];
+    const toneCls = s.tone === "warn" ? "warn-chip" : s.tone === "arrival" ? "arrival-chip" : "";
+    return `<button class="chip ${toneCls}" data-code="${c}" data-index="${i}" aria-pressed="false">${s.label}</button>`;
+  }).join("");
+  document.querySelectorAll("#status-chips .chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      stopPlay();
+      stepIndex = Number(chip.dataset.index);
+      render();
+    });
+  });
+}
+
+function setScenario(key) {
+  stopPlay();
+  scenario = key;
+  stepIndex = 0;
+  buildStatusChips();
+  render();
+  document.querySelectorAll("#scenario-chips .chip").forEach(c =>
+    c.setAttribute("aria-pressed", String(c.dataset.key === key)));
+}
+
+document.getElementById("scenario-chips").innerHTML = Object.entries(SCENARIOS)
+  .map(([k, s]) => `<button class="chip" data-key="${k}" aria-pressed="${k === "standard"}">${s.name}</button>`)
+  .join("");
+document.querySelectorAll("#scenario-chips .chip").forEach(c =>
+  c.addEventListener("click", () => setScenario(c.dataset.key)));
+
+/* Lecture automatique du parcours, étape par étape */
+function stopPlay() {
+  playing = false;
+  clearInterval(playTimer);
+  document.getElementById("play-icon").textContent = "play_arrow";
+}
+function startPlay() {
+  const steps = currentSteps();
+  if (stepIndex >= steps.length - 1) stepIndex = 0;
+  playing = true;
+  document.getElementById("play-icon").textContent = "pause";
+  playTimer = setInterval(() => {
+    stepIndex++;
+    render();
+    if (stepIndex >= steps.length - 1) stopPlay();
+  }, 1400);
+}
+document.getElementById("play-btn").addEventListener("click", () => {
+  playing ? stopPlay() : startPlay();
+});
+
+document.getElementById("btn-refresh").addEventListener("click", (e) => {
+  e.currentTarget.classList.add("spinning");
+  setTimeout(() => e.currentTarget.classList.remove("spinning"), 700);
+});
+
+buildStatusChips();
+stepIndex = 1;
+render();
+</script>
+</body>
+</html>
