@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light only">
+<title>Suivi d'envoi — NKC Express</title>
+
+<!-- ⚠️ MAQUETTE UNIQUEMENT : Tailwind + Google Fonts en CDN.
+     À inliner / auto-héberger avant toute mise en ligne (functionnal_specs_v7.md §12). -->
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script id="tailwind-config">
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          /* === Palette WhatsApp — v2 =====================================
+             Écart vs v1 : le fond crème chaud (#f5f0e6) est remplacé par un
+             neutre froid. Le crème désature le teal et le fait virer au terne ;
+             le neutre froid le laisse franc.                                */
+          background: "#f0f2f5",
+          surface: "#ffffff",
+          "surface-alt": "#e9edef",
+          border: "#d9dee1",
+          text: "#111b21",
+          "text-muted": "#5e6b73",
+
+          /* Un seul vert pour tout le parcours normal (100 → 400).
+             Le vert vif #25D366 est délibérément écarté.                    */
+          primary: "#128C7E",
+          "primary-deep": "#0e6f64",   /* survol / connecteur, non exposé   */
+          warn: "#B85C00"              /* retour expéditeur · annulation    */
+        },
+        fontFamily: {
+          sans: ["Inter", "-apple-system", "sans-serif"],
+          mono: ["JetBrains Mono", "monospace"]
+        },
+        boxShadow: {
+          apple: "0 4px 24px rgba(17,27,33,.06), 0 1px 2px rgba(17,27,33,.03)",
+          "apple-lg": "0 8px 28px rgba(18,140,126,.22), 0 2px 4px rgba(17,27,33,.04)"
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  :root { color-scheme: light; }
+
+  body {
+    background-color: #f0f2f5;
+    color: #111b21;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
+  }
+
+  .glass-header {
+    background: rgba(240, 242, 245, .85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(17, 27, 33, .06);
+  }
+
+  .apple-card {
+    background-color: #ffffff;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 24px rgba(17,27,33,.06), 0 1px 2px rgba(17,27,33,.03);
+    border: 1px solid rgba(17,27,33,.04);
+  }
+
+  /* Connecteur : plein jusqu'au nœud atteint, pointillé au-delà.
+     Centré à 24px = centre exact des pastilles de 48px. */
+  .connector {
+    position: absolute;
+    left: 23px;
+    top: 3rem;
+    bottom: -0.25rem;
+    width: 2px;
+    z-index: 0;
+  }
+  .connector--done   { background-color: #128C7E; } /* valeur par défaut, écrasée en inline si l'étape ciblée est "Livré" */
+  .connector--future {
+    background-image: linear-gradient(to bottom, #d9dee1 55%, transparent 55%);
+    background-size: 2px 8px;
+    background-repeat: repeat-y;
+  }
+
+  .btn-hover { transition: all .2s ease; }
+  .btn-hover:active { transform: scale(.97); opacity: .85; }
+
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
+  }
+
+  @keyframes spin-once { to { transform: rotate(360deg); } }
+  .spinning { animation: spin-once .8s linear infinite; }
+
+  .skeleton {
+    background: linear-gradient(90deg, #e9edef 25%, #f3f6f7 50%, #e9edef 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+
+<!-- =========================================================================
+     Animation « parcours du colis » — bandeau bas de l'écran de déverrouillage.
+     Bloc 100% additif : aucune classe existante n'est modifiée, tout est
+     préfixé "ttx-" pour ne jamais entrer en collision avec le reste du site.
+     Couleurs recopiées depuis tailwind.config > colors (garder synchronisé
+     si la charte change) : primary #128C7E, arrival #00C566, border #d9dee1,
+     text-muted #5e6b73, background #f0f2f5.
+     ========================================================================= -->
+<style id="ttx-tracking-animation-styles">
+  .ttx-banner{
+    --ttx-primary:#128C7E;
+    --ttx-primary-deep:#0e6f64;
+    --ttx-arrival:#00C566;
+    --ttx-border:#d9dee1;
+    --ttx-muted:#5e6b73;
+    --ttx-sky-top:#eaf3f1;
+    --ttx-sky-bottom:#dcebe6;
+    --ttx-body:#f4f6f8;
+    --ttx-duration: 42s;
+
+    position:relative;
+    width:100%;
+    height:190px;
+    overflow:hidden;
+    background:linear-gradient(to bottom, var(--ttx-sky-top), var(--ttx-sky-bottom));
+  }
+  .ttx-banner *{ box-sizing:border-box; }
+
+  .ttx-clouds{ position:absolute; inset:0; overflow:hidden; }
+  .ttx-clouds-track{ position:absolute; top:0; left:0; height:100%; width:200%; display:flex; animation:ttx-scroll 80s linear infinite; }
+  .ttx-clouds-set{ position:relative; width:50%; height:100%; flex:0 0 50%; }
+  .ttx-cloud{ position:absolute; opacity:.55; }
+
+  .ttx-ground{
+    position:absolute; left:0; top:0; width:1600%; height:100%;
+    display:flex;
+    animation: ttx-scroll var(--ttx-duration) linear infinite;
+  }
+  @keyframes ttx-scroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+  .ttx-zone{ position:relative; width:6.25%; height:100%; flex:0 0 6.25%; }
+
+  .ttx-strip{
+    position:absolute; left:16%; right:16%; bottom:34px; height:3px;
+    background-image: repeating-linear-gradient(to right, var(--ttx-border) 0 10px, transparent 10px 20px);
+  }
+  .ttx-strip.runway{ background-image: repeating-linear-gradient(to right, #b9c4cf 0 14px, transparent 14px 26px); }
+
+  .ttx-chip{
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,.9); border:1px solid var(--ttx-border);
+    border-radius:999px; padding:4px 11px 4px 8px;
+    font-family:'Inter',sans-serif; font-size:11px; font-weight:600; color:var(--ttx-muted);
+    white-space:nowrap;
+  }
+  .ttx-chip .material-symbols-outlined{ font-size:14px; color:var(--ttx-primary); }
+
+  .ttx-wheel{ transform-box:fill-box; transform-origin:50% 50%; }
+  .ttx-spin-wheels .ttx-wheel{ animation: ttx-spin .55s linear infinite; }
+  .ttx-prop{ transform-box:fill-box; transform-origin:50% 50%; }
+  .ttx-spin-prop .ttx-prop{ animation: ttx-spin .16s linear infinite; }
+  @keyframes ttx-spin{ to{ transform:rotate(360deg); } }
+
+  .ttx-pulse{ animation: ttx-pulse 1.6s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 50%; }
+  @keyframes ttx-pulse{ 0%,100%{ transform:scale(1); opacity:1;} 50%{ transform:scale(1.14); opacity:.75;} }
+
+  .ttx-streak{ stroke:var(--ttx-muted); stroke-width:2.5; stroke-linecap:round; opacity:.4; animation: ttx-streak 1.1s ease-in-out infinite; }
+  .ttx-streak.s2{ animation-delay:.2s; }
+  .ttx-streak.s3{ animation-delay:.4s; }
+  @keyframes ttx-streak{ 0%{ opacity:0; } 40%{ opacity:.45; } 100%{ opacity:0; } }
+
+  .ttx-checkmark{ animation: ttx-check-in .5s ease-out .3s both, ttx-pulse 2s ease-in-out 1s infinite; }
+  @keyframes ttx-check-in{ from{ transform:scale(0); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+  @media (prefers-reduced-motion: reduce){
+    .ttx-ground, .ttx-clouds-track, .ttx-wheel, .ttx-prop, .ttx-pulse, .ttx-streak, .ttx-checkmark{ animation:none !important; }
+  }
+</style>
+</head>
+
+<body class="w-full flex flex-col font-sans bg-background min-h-screen">
+
+<!-- ================= EN-TÊTE ================= -->
+<header class="glass-header flex justify-between items-center w-full px-5 md:px-8 h-16 z-50 sticky top-0 shrink-0">
+  <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-primary text-2xl">package_2</span>
+    <span class="text-lg font-semibold tracking-tight text-text">NKC Express</span>
+  </div>
+  <button id="btn-refresh" aria-label="Actualiser le suivi" title="Actualiser"
+          class="hidden w-10 h-10 rounded-full items-center justify-center bg-black/5 hover:bg-black/10 transition-colors btn-hover text-text">
+    <span class="material-symbols-outlined text-xl">refresh</span>
+  </button>
+</header>
+
+<main class="flex-grow w-full max-w-2xl mx-auto px-5 md:px-8 py-6 pb-safe flex flex-col gap-4">
+
+  <!-- ===== ÉCRAN 1 — DÉVERROUILLAGE ===== -->
+  <section id="screen-unlock" class="apple-card p-6 md:p-8 flex flex-col gap-5">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="text-2xl font-bold tracking-tight text-text">Suivre mon envoi</h1>
+      <p class="text-sm text-text-muted leading-relaxed">
+        La référence et le code figurent sur le ticket qui vous a été remis à l'agence.
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="input-ref" class="text-sm font-semibold text-text">Référence de l'envoi</label>
+      <input id="input-ref" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+             placeholder="NKC-260824-007"
+             class="bg-surface-alt border-none rounded-xl font-mono text-lg tracking-wide w-full py-3.5 px-4 text-text placeholder:text-text-muted/60 focus:ring-2 focus:ring-primary/40 uppercase">
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="input-code" class="text-sm font-semibold text-text">Code de suivi</label>
+      <input id="input-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+             autocomplete="off" spellcheck="false" placeholder="8 chiffres"
+             class="bg-surface-alt border-none rounded-xl font-mono text-lg tracking-[.3em] w-full py-3.5 px-4 text-text placeholder:text-text-muted/60 placeholder:tracking-normal focus:ring-2 focus:ring-primary/40">
+    </div>
+
+    <div id="unlock-error" class="hidden items-start gap-2.5 rounded-xl bg-warn/10 border border-warn/25 px-4 py-3">
+      <span class="material-symbols-outlined text-warn text-xl shrink-0">error</span>
+      <p id="unlock-error-text" class="text-sm text-text leading-relaxed"></p>
+    </div>
+
+    <button id="btn-track"
+            class="mt-1 bg-primary text-white rounded-xl py-4 font-semibold text-base btn-hover shadow-apple-lg flex items-center justify-center gap-2 disabled:opacity-50">
+      <span id="btn-track-label">Afficher le suivi</span>
+      <span id="btn-track-icon" class="material-symbols-outlined text-lg">arrow_forward</span>
+    </button>
+
+    <!-- ================= ANIMATION : parcours du colis =================
+         Bandeau décoratif, purement CSS/SVG, aucune dépendance sur la
+         logique de suivi. Bleed jusqu'aux bords de la carte via marges
+         négatives (compense le padding p-6 / md:p-8 de .apple-card). -->
+    <div class="mt-2 -mx-6 -mb-6 md:-mx-8 md:-mb-8 rounded-b-3xl overflow-hidden relative ttx-banner" aria-hidden="true">
+
+      <svg width="0" height="0" style="position:absolute">
+        <defs>
+          <symbol id="ttx-cloud" viewBox="0 0 200 90">
+            <g fill="#fff">
+              <ellipse cx="55" cy="55" rx="45" ry="28"/>
+              <ellipse cx="100" cy="42" rx="38" ry="26"/>
+              <ellipse cx="140" cy="56" rx="32" ry="22"/>
+              <ellipse cx="90" cy="62" rx="50" ry="20"/>
+            </g>
+          </symbol>
+
+          <symbol id="ttx-warehouse" viewBox="0 0 180 130">
+            <rect x="15" y="55" width="150" height="65" rx="3" fill="#e3e7ea"/>
+            <path d="M8 58 L90 18 L172 58 Z" fill="#c7d0d8"/>
+            <rect x="68" y="82" width="36" height="38" fill="#b9c4cf"/>
+            <rect x="30" y="68" width="22" height="16" fill="#f4f6f8"/>
+            <rect x="128" y="68" width="22" height="16" fill="#f4f6f8"/>
+          </symbol>
+
+          <symbol id="ttx-tower" viewBox="0 0 60 140">
+            <rect x="26" y="30" width="8" height="90" fill="#c7d0d8"/>
+            <rect x="10" y="6" width="40" height="28" rx="4" fill="#b9c4cf"/>
+            <rect x="16" y="12" width="28" height="10" fill="#eaf3f1"/>
+            <line x1="30" y1="6" x2="30" y2="-8" stroke="#b9c4cf" stroke-width="3"/>
+          </symbol>
+
+          <symbol id="ttx-house" viewBox="0 0 170 130">
+            <rect x="32" y="55" width="106" height="65" rx="3" fill="#e9c9a0"/>
+            <path d="M22 60 L85 18 L148 60 Z" fill="#128C7E"/>
+            <rect x="74" y="88" width="28" height="32" fill="#5e6b73"/>
+            <rect x="45" y="70" width="20" height="16" fill="#eaf3f1"/>
+            <rect x="104" y="70" width="20" height="16" fill="#eaf3f1"/>
+            <line x1="150" y1="120" x2="150" y2="95" stroke="#8a9099" stroke-width="4"/>
+            <rect x="146" y="86" width="16" height="11" rx="2" fill="#128C7E"/>
+          </symbol>
+
+          <symbol id="ttx-package" viewBox="0 0 60 60">
+            <rect x="4" y="4" width="52" height="52" rx="5" fill="#fff" stroke="#d9dee1" stroke-width="3"/>
+            <path d="M4 22 H56 M30 22 V56" stroke="#d9dee1" stroke-width="3"/>
+            <path d="M30 4 V22" stroke="#128C7E" stroke-width="4"/>
+          </symbol>
+
+          <symbol id="ttx-van" viewBox="0 0 180 100">
+            <rect x="6" y="46" width="112" height="36" rx="6" fill="#f4f6f8" stroke="#d9dee1" stroke-width="2.5"/>
+            <path d="M118,46 L146,46 C153,46 158,50 162,58 L170,72 L170,82 L118,82 Z" fill="#128C7E"/>
+            <rect x="132" y="55" width="22" height="15" rx="2" fill="#dff3ef" opacity=".9"/>
+            <rect x="20" y="54" width="30" height="20" rx="2" fill="#eaf3f1" stroke="#128C7E" stroke-width="2"/>
+            <rect x="24" y="58" width="14" height="12" fill="#fff" stroke="#d9dee1" stroke-width="1.5"/>
+            <path d="M10,80 C60,86 110,86 168,80" stroke="#128C7E" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <g class="ttx-wheel"><circle cx="40" cy="84" r="11" fill="#3a4a57"/><circle cx="40" cy="84" r="4.2" fill="#c7d0d8"/></g>
+            <g class="ttx-wheel"><circle cx="140" cy="84" r="11" fill="#3a4a57"/><circle cx="140" cy="84" r="4.2" fill="#c7d0d8"/></g>
+          </symbol>
+
+          <symbol id="ttx-plane" viewBox="0 0 300 150">
+            <path d="M96,80 L216,64 L228,74 L110,92 Z" fill="#e3e7ea" stroke="#d9dee1" stroke-width="2"/>
+            <path d="M28,60 C24,42 30,26 46,16 C56,26 60,42 58,60 Z" fill="#128C7E"/>
+            <path d="M15,78 L40,72 L40,88 Z" fill="#f4f6f8" stroke="#d9dee1" stroke-width="2"/>
+            <path d="M20,80 C20,65 45,58 90,56 C160,53 230,58 260,70 C270,74 274,78 274,80 C274,84 268,90 258,94 C228,104 160,108 90,105 C45,103 20,96 20,80 Z"
+                  fill="#f4f6f8" stroke="#d9dee1" stroke-width="2.5"/>
+            <path d="M40,84 C100,90 200,90 258,80" stroke="#128C7E" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <path d="M256,68 Q276,72 276,80 Q276,88 256,92 Z" fill="#128C7E"/>
+            <path d="M223,68 C233,66 244,68 250,74 C244,78 233,79 224,77 Z" fill="#3a4a57"/>
+            <g class="ttx-wheel"><line x1="90" y1="105" x2="90" y2="118" stroke="#8a9099" stroke-width="3"/><circle cx="90" cy="121" r="6.5" fill="#3a4a57"/></g>
+            <g class="ttx-wheel"><line x1="200" y1="105" x2="200" y2="118" stroke="#8a9099" stroke-width="3"/><circle cx="200" cy="121" r="6.5" fill="#3a4a57"/></g>
+          </symbol>
+
+          <symbol id="ttx-propeller" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="44" fill="#c7d0d8" opacity=".2"/>
+            <g class="ttx-prop">
+              <ellipse cx="50" cy="18" rx="8" ry="26" fill="#e3e7ea" stroke="#d9dee1" stroke-width="3"/>
+              <ellipse cx="50" cy="82" rx="8" ry="26" fill="#e3e7ea" stroke="#d9dee1" stroke-width="3"/>
+            </g>
+            <circle cx="50" cy="50" r="9" fill="#3a4a57"/>
+          </symbol>
+        </defs>
+      </svg>
+
+      <div class="ttx-clouds">
+        <div class="ttx-clouds-track">
+          <div class="ttx-clouds-set">
+            <svg class="ttx-cloud" style="left:10%;top:10%;width:60px;height:27px"><use href="#ttx-cloud"/></svg>
+            <svg class="ttx-cloud" style="left:55%;top:6%;width:70px;height:32px"><use href="#ttx-cloud"/></svg>
+            <svg class="ttx-cloud" style="left:85%;top:16%;width:50px;height:23px"><use href="#ttx-cloud"/></svg>
+          </div>
+          <div class="ttx-clouds-set">
+            <svg class="ttx-cloud" style="left:10%;top:10%;width:60px;height:27px"><use href="#ttx-cloud"/></svg>
+            <svg class="ttx-cloud" style="left:55%;top:6%;width:70px;height:32px"><use href="#ttx-cloud"/></svg>
+            <svg class="ttx-cloud" style="left:85%;top:16%;width:50px;height:23px"><use href="#ttx-cloud"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="ttx-ground">
+
+        <!-- ===== copie 1 : les 8 étapes du parcours ===== -->
+
+        <!-- 1 · Départ entrepôt -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">publish</span>Départ entrepôt</span>
+          <svg style="position:absolute;left:6%;bottom:34px;width:32%;height:52%"><use href="#ttx-warehouse"/></svg>
+          <div class="ttx-strip"></div>
+          <svg class="ttx-spin-wheels" style="position:absolute;left:52%;bottom:34px;width:34%;height:40%"><use href="#ttx-van"/></svg>
+        </div>
+
+        <!-- 2 · Chargement avion -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_takeoff</span>Chargement</span>
+          <svg style="position:absolute;right:6%;top:18%;width:12%;height:34%;opacity:.6"><use href="#ttx-tower"/></svg>
+          <div class="ttx-strip runway"></div>
+          <svg style="position:absolute;left:38%;bottom:44px;width:40%;height:42%"><use href="#ttx-plane"/></svg>
+          <svg style="position:absolute;left:8%;bottom:34px;width:26%;height:34%"><use href="#ttx-van"/></svg>
+          <svg class="ttx-pulse" style="position:absolute;left:30%;bottom:52px;width:9%;height:16%"><use href="#ttx-package"/></svg>
+        </div>
+
+        <!-- 3 · Décollage -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_takeoff</span>Décollage</span>
+          <div class="ttx-strip runway" style="right:60%"></div>
+          <svg class="ttx-spin-prop ttx-spin-wheels" style="position:absolute;left:38%;bottom:78px;width:42%;height:40%;transform:rotate(-13deg)"><use href="#ttx-plane"/></svg>
+          <div class="ttx-prop-slot" style="position:absolute;left:75%;bottom:112px;width:9%;height:9%"><svg style="width:100%;height:100%"><use href="#ttx-propeller"/></svg></div>
+          <svg viewBox="0 0 100 60" style="position:absolute;left:14%;bottom:60px;width:20%;height:16%">
+            <line class="ttx-streak" x1="0" y1="30" x2="30" y2="30"/>
+            <line class="ttx-streak s2" x1="0" y1="14" x2="24" y2="14"/>
+            <line class="ttx-streak s3" x1="0" y1="46" x2="24" y2="46"/>
+          </svg>
+        </div>
+
+        <!-- 4 · En vol -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight</span>En vol</span>
+          <svg class="ttx-cloud" style="position:absolute;left:10%;top:60%;width:15%;height:9%;opacity:.7"><use href="#ttx-cloud"/></svg>
+          <svg class="ttx-cloud" style="position:absolute;left:68%;top:22%;width:13%;height:8%;opacity:.6"><use href="#ttx-cloud"/></svg>
+          <svg class="ttx-spin-prop" style="position:absolute;left:38%;bottom:118px;width:40%;height:38%"><use href="#ttx-plane"/></svg>
+          <div class="ttx-prop-slot" style="position:absolute;left:74%;bottom:150px;width:8.5%;height:8.5%"><svg style="width:100%;height:100%"><use href="#ttx-propeller"/></svg></div>
+        </div>
+
+        <!-- 5 · Atterrissage -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_land</span>Atterrissage</span>
+          <div class="ttx-strip runway" style="left:60%"></div>
+          <svg class="ttx-spin-prop" style="position:absolute;left:30%;bottom:60px;width:42%;height:40%;transform:rotate(11deg)"><use href="#ttx-plane"/></svg>
+          <div class="ttx-prop-slot" style="position:absolute;left:66%;bottom:88px;width:9%;height:9%"><svg style="width:100%;height:100%"><use href="#ttx-propeller"/></svg></div>
+        </div>
+
+        <!-- 6 · Déchargement -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_land</span>Déchargement</span>
+          <svg style="position:absolute;left:4%;top:18%;width:12%;height:34%;opacity:.6"><use href="#ttx-tower"/></svg>
+          <div class="ttx-strip runway"></div>
+          <svg style="position:absolute;left:12%;bottom:44px;width:40%;height:42%"><use href="#ttx-plane"/></svg>
+          <svg style="position:absolute;left:56%;bottom:34px;width:26%;height:34%"><use href="#ttx-van"/></svg>
+          <svg class="ttx-pulse" style="position:absolute;left:50%;bottom:52px;width:9%;height:16%"><use href="#ttx-package"/></svg>
+        </div>
+
+        <!-- 7 · En route -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">local_shipping</span>En route</span>
+          <div class="ttx-strip"></div>
+          <svg class="ttx-spin-wheels" style="position:absolute;left:40%;bottom:34px;width:34%;height:40%"><use href="#ttx-van"/></svg>
+        </div>
+
+        <!-- 8 · Livré -->
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">inventory_2</span>Livré</span>
+          <svg style="position:absolute;left:44%;bottom:34px;width:32%;height:56%"><use href="#ttx-house"/></svg>
+          <div class="ttx-strip"></div>
+          <svg style="position:absolute;left:10%;bottom:34px;width:26%;height:34%"><use href="#ttx-van"/></svg>
+          <svg style="position:absolute;left:36%;bottom:44px;width:8%;height:14%"><use href="#ttx-package"/></svg>
+          <svg viewBox="0 0 40 40" class="ttx-checkmark" style="position:absolute;left:40%;bottom:70px;width:24px;height:24px">
+            <circle cx="20" cy="20" r="18" fill="#00C566"/>
+            <path d="M11,20 L17,26 L29,13" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- ===== copie 2 : identique, pour une boucle sans coupure ===== -->
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">publish</span>Départ entrepôt</span>
+          <svg style="position:absolute;left:6%;bottom:34px;width:32%;height:52%"><use href="#ttx-warehouse"/></svg>
+          <div class="ttx-strip"></div>
+          <svg class="ttx-spin-wheels" style="position:absolute;left:52%;bottom:34px;width:34%;height:40%"><use href="#ttx-van"/></svg>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_takeoff</span>Chargement</span>
+          <svg style="position:absolute;right:6%;top:18%;width:12%;height:34%;opacity:.6"><use href="#ttx-tower"/></svg>
+          <div class="ttx-strip runway"></div>
+          <svg style="position:absolute;left:38%;bottom:44px;width:40%;height:42%"><use href="#ttx-plane"/></svg>
+          <svg style="position:absolute;left:8%;bottom:34px;width:26%;height:34%"><use href="#ttx-van"/></svg>
+          <svg class="ttx-pulse" style="position:absolute;left:30%;bottom:52px;width:9%;height:16%"><use href="#ttx-package"/></svg>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_takeoff</span>Décollage</span>
+          <div class="ttx-strip runway" style="right:60%"></div>
+          <svg class="ttx-spin-prop ttx-spin-wheels" style="position:absolute;left:38%;bottom:78px;width:42%;height:40%;transform:rotate(-13deg)"><use href="#ttx-plane"/></svg>
+          <div class="ttx-prop-slot" style="position:absolute;left:75%;bottom:112px;width:9%;height:9%"><svg style="width:100%;height:100%"><use href="#ttx-propeller"/></svg></div>
+          <svg viewBox="0 0 100 60" style="position:absolute;left:14%;bottom:60px;width:20%;height:16%">
+            <line class="ttx-streak" x1="0" y1="30" x2="30" y2="30"/>
+            <line class="ttx-streak s2" x1="0" y1="14" x2="24" y2="14"/>
+            <line class="ttx-streak s3" x1="0" y1="46" x2="24" y2="46"/>
+          </svg>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight</span>En vol</span>
+          <svg class="ttx-cloud" style="position:absolute;left:10%;top:60%;width:15%;height:9%;opacity:.7"><use href="#ttx-cloud"/></svg>
+          <svg class="ttx-cloud" style="position:absolute;left:68%;top:22%;width:13%;height:8%;opacity:.6"><use href="#ttx-cloud"/></svg>
+          <svg class="ttx-spin-prop" style="position:absolute;left:38%;bottom:118px;width:40%;height:38%"><use href="#ttx-plane"/></svg>
+          <div class="ttx-prop-slot" style="position:absolute;left:74%;bottom:150px;width:8.5%;height:8.5%"><svg style="width:100%;height:100%"><use href="#ttx-propeller"/></svg></div>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_land</span>Atterrissage</span>
+          <div class="ttx-strip runway" style="left:60%"></div>
+          <svg class="ttx-spin-prop" style="position:absolute;left:30%;bottom:60px;width:42%;height:40%;transform:rotate(11deg)"><use href="#ttx-plane"/></svg>
+          <div class="ttx-prop-slot" style="position:absolute;left:66%;bottom:88px;width:9%;height:9%"><svg style="width:100%;height:100%"><use href="#ttx-propeller"/></svg></div>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">flight_land</span>Déchargement</span>
+          <svg style="position:absolute;left:4%;top:18%;width:12%;height:34%;opacity:.6"><use href="#ttx-tower"/></svg>
+          <div class="ttx-strip runway"></div>
+          <svg style="position:absolute;left:12%;bottom:44px;width:40%;height:42%"><use href="#ttx-plane"/></svg>
+          <svg style="position:absolute;left:56%;bottom:34px;width:26%;height:34%"><use href="#ttx-van"/></svg>
+          <svg class="ttx-pulse" style="position:absolute;left:50%;bottom:52px;width:9%;height:16%"><use href="#ttx-package"/></svg>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">local_shipping</span>En route</span>
+          <div class="ttx-strip"></div>
+          <svg class="ttx-spin-wheels" style="position:absolute;left:40%;bottom:34px;width:34%;height:40%"><use href="#ttx-van"/></svg>
+        </div>
+
+        <div class="ttx-zone">
+          <span class="ttx-chip"><span class="material-symbols-outlined">inventory_2</span>Livré</span>
+          <svg style="position:absolute;left:44%;bottom:34px;width:32%;height:56%"><use href="#ttx-house"/></svg>
+          <div class="ttx-strip"></div>
+          <svg style="position:absolute;left:10%;bottom:34px;width:26%;height:34%"><use href="#ttx-van"/></svg>
+          <svg style="position:absolute;left:36%;bottom:44px;width:8%;height:14%"><use href="#ttx-package"/></svg>
+          <svg viewBox="0 0 40 40" class="ttx-checkmark" style="position:absolute;left:40%;bottom:70px;width:24px;height:24px">
+            <circle cx="20" cy="20" r="18" fill="#00C566"/>
+            <path d="M11,20 L17,26 L29,13" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+      </div>
+    </div>
+    <!-- ================= FIN ANIMATION ================= -->
+  </section>
+
+  <!-- ===== ÉCRAN 2 — CHARGEMENT ===== -->
+  <section id="screen-loading" class="hidden flex-col gap-4">
+    <div class="apple-card p-6 flex flex-col gap-4">
+      <div class="skeleton h-4 w-24 rounded"></div>
+      <div class="skeleton h-9 w-2/3 rounded"></div>
+      <div class="skeleton h-4 w-1/2 rounded"></div>
+    </div>
+    <div class="apple-card p-6 flex flex-col gap-6">
+      <div class="skeleton h-4 w-20 rounded"></div>
+      <div class="skeleton h-12 w-full rounded-xl"></div>
+      <div class="skeleton h-12 w-full rounded-xl"></div>
+      <div class="skeleton h-12 w-full rounded-xl"></div>
+    </div>
+  </section>
+
+  <!-- ===== ÉCRAN 3 — RÉSULTAT ===== -->
+  <section id="screen-result" class="hidden flex-col gap-4">
+
+    <div id="status-band" class="apple-card p-6 md:p-7 flex flex-col gap-5">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1 min-w-0">
+          <span id="status-eyebrow" class="text-xs font-semibold uppercase tracking-wider" style="opacity:.8">Statut</span>
+          <h2 id="status-label" class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight break-words"></h2>
+        </div>
+        <span id="status-icon" class="material-symbols-outlined text-4xl shrink-0" style="opacity:.9"></span>
+      </div>
+
+      <p id="status-detail" class="text-base font-medium leading-relaxed" style="opacity:.92"></p>
+
+      <div id="status-foot" class="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1" style="border-top:1px solid color-mix(in srgb, currentColor 28%, transparent)">
+        <div class="flex items-center gap-2 pt-3">
+          <span id="route-origin" class="text-sm font-semibold"></span>
+          <span class="material-symbols-outlined text-base" style="opacity:.75">arrow_right_alt</span>
+          <span id="route-destination" class="text-sm font-semibold"></span>
+        </div>
+        <span id="last-update" class="text-xs font-medium font-mono pt-3" style="opacity:.8"></span>
+      </div>
+    </div>
+
+    <div class="apple-card px-6 py-4 flex items-center justify-between gap-4">
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <span class="text-sm font-semibold text-text">Référence</span>
+        <span id="result-ref" class="font-mono text-base font-medium text-text-muted tracking-wide truncate"></span>
+      </div>
+      <button id="btn-change" class="text-sm font-semibold text-primary hover:underline btn-hover shrink-0">
+        Changer
+      </button>
+    </div>
+
+    <div class="apple-card p-6 md:p-7">
+      <h3 class="text-sm font-semibold text-text mb-6">Parcours</h3>
+      <ol id="timeline" class="relative flex flex-col"></ol>
+    </div>
+  </section>
+
+  <!-- ===== ÉCRAN 4 — BLOCAGE ===== -->
+  <section id="screen-blocked" class="hidden apple-card p-8 flex-col items-center text-center gap-4">
+    <span class="material-symbols-outlined text-5xl text-warn">lock_clock</span>
+    <h2 class="text-xl font-bold tracking-tight text-text">Trop de tentatives</h2>
+    <p id="blocked-text" class="text-sm text-text-muted leading-relaxed max-w-sm"></p>
+    <button id="btn-blocked-back" class="mt-2 bg-surface-alt text-text rounded-xl py-3 px-6 font-semibold text-sm btn-hover">
+      Revenir
+    </button>
+  </section>
+
+  <p class="text-xs text-text-muted text-center mt-2 leading-relaxed">
+    Une question sur votre envoi&nbsp;? Contactez l'agence de dépôt.
+  </p>
+</main>
+
+<div id="live-region" aria-live="polite" class="sr-only"></div>
+
+<script>
+/* =========================================================================
+   NKC Express — Page de suivi · v3 (thème WhatsApp, ton "arrival" dédié)
+   Structure, typographie et logique identiques à v1. Seule la couche
+   chromatique change. Données simulées : le backend n'existe pas encore
+   (api_contract_v6.md §4 · GET /tracking/:base_uid?c=<code>).
+   ========================================================================= */
+
+// === DEBUT BLOC : Référentiel des statuts ===
+// ⚠️ Écart v1 → v2 : le statut 400 passe du ton « done » au ton « primary ».
+// Un seul vert couvre désormais 100 → 400 ; seuls 900 et 999 s'en distinguent.
+const STATUSES = {
+  100: { label: "Déposé",        icon: "publish",        tone: "primary", detail: (o, d) => `Enregistré à ${o}, en attente de départ vers ${d}.` },
+  200: { label: "Expédié",       icon: "flight_takeoff", tone: "primary", detail: (o, d) => `En transit vers ${d}.` },
+  300: { label: "Disponible",    icon: "flight_land",    tone: "primary", detail: (o, d) => `Arrivé à ${d}, prêt à être retiré.` },
+  350: { label: "En livraison",  icon: "local_shipping", tone: "primary", detail: (o, d) => `En tournée de livraison à ${d}.` },
+  // Seul statut hors de la charte teal partagée : vert vif, texte sombre.
+  // Décision validée sur nkc_tracking_whatsapp_demo_v3.html.
+  400: { label: "Livré",         icon: "inventory_2",    tone: "arrival", detail: (o, d) => `Remis au destinataire à ${d}.` },
+  900: { label: "Retour",        icon: "undo",           tone: "warn",    detail: (o, d) => `Renvoyé à l'expéditeur, à ${o}.` },
+  999: { label: "Annulé",        icon: "cancel",         tone: "warn",    detail: () => `Cet envoi a été annulé.` }
+};
+
+// Chaque ton porte bg (fond) + fg (texte) + dot (couleur pleine des pastilles/connecteurs).
+// "arrival" est le seul en texte sombre : #00C566 ne supporte pas le blanc
+// (contraste ~1,8:1). Vérifié : #00C566 / #052E19 → 6,5:1 (AA).
+const TONES = {
+  primary: { bg: "#128C7E", fg: "#ffffff", dot: "#128C7E" },
+  arrival: { bg: "#00C566", fg: "#052E19", dot: "#00C566" },
+  warn:    { bg: "#B85C00", fg: "#ffffff", dot: "#B85C00" }
+};
+
+const NORMAL_FLOW = [100, 200, 300, 400];
+const CITIES = { paris: "Paris", nouakchott: "Nouakchott" };
+// === FIN BLOC : Référentiel des statuts ===
+
+
+// === DEBUT BLOC : Jeu de données simulé ===
+const MOCK = {
+  "NKC-260824-007": {
+    code: "41528096", status: 200, origin_city: "paris", destination_city: "nouakchott",
+    history: [
+      { status: 100, date: "2026-08-24T14:30:00" },
+      { status: 200, date: "2026-08-25T09:15:00" }
+    ]
+  },
+  "NKC-260827-002": {
+    code: "10293847", status: 100, origin_city: "paris", destination_city: "nouakchott",
+    history: [ { status: 100, date: "2026-08-27T10:05:00" } ]
+  },
+  "NKC-260812-014": {
+    code: "77451230", status: 400, origin_city: "nouakchott", destination_city: "paris",
+    history: [
+      { status: 100, date: "2026-08-12T11:00:00" },
+      { status: 200, date: "2026-08-13T08:40:00" },
+      { status: 300, date: "2026-08-18T15:20:00" },
+      { status: 400, date: "2026-08-19T17:05:00" }
+    ]
+  },
+  "NKC-260818-009": { // disponible — arrivé à destination, pas encore retiré
+    code: "63820147", status: 300, origin_city: "paris", destination_city: "nouakchott",
+    history: [
+      { status: 100, date: "2026-08-18T10:15:00" },
+      { status: 200, date: "2026-08-19T07:30:00" },
+      { status: 300, date: "2026-08-24T13:50:00" }
+    ]
+  },
+  "NKC-260805-003": {
+    code: "55512348", status: 900, origin_city: "paris", destination_city: "nouakchott",
+    history: [
+      { status: 100, date: "2026-08-05T09:30:00" },
+      { status: 200, date: "2026-08-06T07:50:00" },
+      { status: 900, date: "2026-08-20T13:10:00" }
+    ]
+  }
+};
+
+const LATENCY_MS = 700;
+const MAX_ATTEMPTS = 5;
+let failedAttempts = 0;
+let currentRef = null;
+let currentCode = null;
+
+function fetchTracking(ref, code) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (failedAttempts >= MAX_ATTEMPTS) return reject({ code: "RATE_LIMITED" });
+      const row = MOCK[ref];
+      // Message uniforme : ne révèle pas laquelle des deux valeurs est fausse.
+      if (!row || row.code !== code) {
+        failedAttempts++;
+        return reject({ code: "NOT_FOUND" });
+      }
+      failedAttempts = 0;
+      resolve({
+        status: row.status,
+        status_history: row.history,
+        origin_city: row.origin_city,
+        destination_city: row.destination_city
+      });
+    }, LATENCY_MS);
+  });
+}
+// === FIN BLOC : Jeu de données simulé ===
+
+
+// === DEBUT BLOC : Utilitaires ===
+const $ = (id) => document.getElementById(id);
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+       + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatShort(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })
+       + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function showScreen(name) {
+  ["screen-unlock", "screen-loading", "screen-result", "screen-blocked"].forEach((id) => {
+    const el = $(id);
+    const on = id === "screen-" + name;
+    el.classList.toggle("hidden", !on);
+    el.classList.toggle("flex", on);
+  });
+  $("btn-refresh").classList.toggle("hidden", name !== "result");
+  $("btn-refresh").classList.toggle("flex", name === "result");
+}
+
+function announce(msg) { $("live-region").textContent = msg; }
+// === FIN BLOC : Utilitaires ===
+
+
+// === DEBUT BLOC : Rendu de la frise ===
+function renderTimeline(data) {
+  const origin = CITIES[data.origin_city] || data.origin_city;
+  const destination = CITIES[data.destination_city] || data.destination_city;
+  const reached = new Map(data.status_history.map((h) => [h.status, h.date]));
+
+  const exceptional = data.status_history
+    .map((h) => h.status)
+    .filter((s) => !NORMAL_FLOW.includes(s));
+
+  let steps = [...NORMAL_FLOW];
+  if (reached.has(350)) steps.splice(steps.indexOf(400), 0, 350);
+  if (exceptional.length) {
+    steps = steps.filter((s) => reached.has(s)).concat(exceptional);
+  }
+
+  const lastReachedIndex = steps.reduce((acc, s, i) => (reached.has(s) ? i : acc), -1);
+
+  $("timeline").innerHTML = steps.map((code, i) => {
+    const st = STATUSES[code];
+    const isReached = reached.has(code);
+    const isCurrent = i === lastReachedIndex;
+    const isLast = i === steps.length - 1;
+    const tone = TONES[st.tone];
+
+    // Le connecteur porte la couleur de l'étape qu'il MÈNE VERS : le segment qui
+    // aboutit à "Livré" doit être vert vif, pas teal, même s'il part d'une étape teal.
+    const nextTone = !isLast ? TONES[STATUSES[steps[i + 1]]?.tone] : null;
+    const connColor = (i < lastReachedIndex && nextTone) ? nextTone.bg : null;
+    const connector = isLast ? ""
+      : `<span class="connector ${i < lastReachedIndex ? "connector--done" : "connector--future"}"${connColor ? ` style="background-color:${connColor}"` : ""}></span>`;
+
+    const dotStyle = isCurrent
+      ? `background-color:${tone.dot};`
+      : isReached
+        ? `background-color:${tone.dot}1f;border:2px solid ${tone.dot};`
+        : "background-color:#e9edef;border:2px dashed #d9dee1;";
+
+    const iconColor = isCurrent ? tone.fg : isReached ? tone.dot : "#5e6b73";
+    const dim = isReached ? "" : "opacity-[.65]";
+
+    // Aucune date sur les étapes à venir : l'API ne renvoie que le passé.
+    const dateLine = isReached
+      ? `<p class="text-xs font-medium text-text-muted mt-1.5 font-mono">${formatShort(reached.get(code))}</p>`
+      : `<p class="text-xs font-medium text-text-muted mt-1.5">À venir</p>`;
+
+    return `
+      <li class="relative pl-16 ${isLast ? "" : "pb-8"} ${dim}">
+        ${connector}
+        <span class="absolute left-0 top-0 w-12 h-12 rounded-full flex items-center justify-center z-10" style="${dotStyle}">
+          <span class="material-symbols-outlined text-xl" style="color:${iconColor}">${st.icon}</span>
+        </span>
+        <div class="pt-1.5">
+          <p class="${isCurrent ? "text-lg font-bold" : "text-base font-semibold"} tracking-tight text-text">${st.label}</p>
+          <p class="text-sm text-text-muted mt-0.5 leading-relaxed">${st.detail(origin, destination)}</p>
+          ${dateLine}
+        </div>
+      </li>`;
+  }).join("");
+}
+// === FIN BLOC : Rendu de la frise ===
+
+
+// === DEBUT BLOC : Rendu du résultat ===
+function renderResult(data) {
+  const st = STATUSES[data.status];
+  const tone = TONES[st.tone];
+  const origin = CITIES[data.origin_city] || data.origin_city;
+  const destination = CITIES[data.destination_city] || data.destination_city;
+  const last = data.status_history[data.status_history.length - 1];
+
+  $("status-band").style.backgroundColor = tone.bg;
+  $("status-band").style.color = tone.fg;
+  $("status-band").style.borderColor = "transparent";
+  $("status-label").textContent = st.label;
+  $("status-icon").textContent = st.icon;
+  $("status-detail").textContent = st.detail(origin, destination);
+  $("route-origin").textContent = origin;
+  $("route-destination").textContent = destination;
+  $("last-update").textContent = "Mis à jour le " + formatDate(last.date);
+  $("result-ref").textContent = currentRef;
+
+  renderTimeline(data);
+  showScreen("result");
+  announce(`Statut de l'envoi : ${st.label}. ${st.detail(origin, destination)}`);
+}
+// === FIN BLOC : Rendu du résultat ===
+
+
+// === DEBUT BLOC : Contrôleur ===
+function showUnlockError(msg) {
+  $("unlock-error-text").textContent = msg;
+  $("unlock-error").classList.remove("hidden");
+  $("unlock-error").classList.add("flex");
+  announce(msg);
+}
+
+function clearUnlockError() {
+  $("unlock-error").classList.add("hidden");
+  $("unlock-error").classList.remove("flex");
+}
+
+function setTracking(busy) {
+  $("btn-track").disabled = busy;
+  $("btn-track-label").textContent = busy ? "Vérification…" : "Afficher le suivi";
+  $("btn-track-icon").textContent = busy ? "progress_activity" : "arrow_forward";
+  $("btn-track-icon").classList.toggle("spinning", busy);
+}
+
+function lookup(ref, code, { silent = false } = {}) {
+  clearUnlockError();
+  if (!silent) { setTracking(true); showScreen("loading"); }
+
+  fetchTracking(ref, code)
+    .then((data) => {
+      currentRef = ref;
+      currentCode = code;
+      renderResult(data);
+    })
+    .catch((err) => {
+      if (err.code === "RATE_LIMITED") {
+        $("blocked-text").textContent =
+          "Par sécurité, l'accès au suivi est temporairement suspendu. Réessayez dans quelques minutes, ou contactez l'agence de dépôt.";
+        showScreen("blocked");
+        announce("Accès temporairement suspendu.");
+        return;
+      }
+      showScreen("unlock");
+      showUnlockError("Référence ou code de suivi incorrect. Vérifiez les deux valeurs sur votre ticket.");
+    })
+    .finally(() => setTracking(false));
+}
+
+$("btn-track").addEventListener("click", () => {
+  const ref = $("input-ref").value.trim().toUpperCase();
+  const code = $("input-code").value.trim();
+  if (!ref || !code) {
+    showUnlockError("Renseignez la référence et le code de suivi.");
+    return;
+  }
+  lookup(ref, code);
+});
+
+[$("input-ref"), $("input-code")].forEach((input) => {
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-track").click(); });
+  input.addEventListener("input", clearUnlockError);
+});
+
+$("input-code").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 8);
+});
+
+$("btn-change").addEventListener("click", () => {
+  $("input-code").value = "";
+  clearUnlockError();
+  showScreen("unlock");
+  $("input-ref").focus();
+});
+
+$("btn-blocked-back").addEventListener("click", () => {
+  failedAttempts = 0;
+  showScreen("unlock");
+});
+
+$("btn-refresh").addEventListener("click", () => {
+  if (!currentRef) return;
+  const icon = $("btn-refresh").querySelector("span");
+  icon.classList.add("spinning");
+  fetchTracking(currentRef, currentCode)
+    .then(renderResult)
+    .catch(() => announce("Actualisation impossible."))
+    .finally(() => icon.classList.remove("spinning"));
+});
+
+// === Ouverture par QR : …/track/{base_uid}?c={code} ===
+(function initFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("c");
+  const path = window.location.pathname.split("/").filter(Boolean);
+  const ref = params.get("ref") || (path.length ? decodeURIComponent(path[path.length - 1]).toUpperCase() : null);
+
+  if (ref && code && /^NKC-\d{6}-\d{3}$/.test(ref)) {
+    $("input-ref").value = ref;
+    $("input-code").value = code;
+    showScreen("loading");
+    lookup(ref, code, { silent: true });
+    history.replaceState(null, "", window.location.pathname);
+    return;
+  }
+  showScreen("unlock");
+})();
+// === FIN BLOC : Contrôleur ===
+</script>
+</body>
+</html>
